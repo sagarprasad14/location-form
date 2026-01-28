@@ -1,53 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Location Collection</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body { font-family: Arial; padding: 20px; max-width: 500px; margin: auto; }
-    input, button { width: 100%; padding: 10px; margin: 8px 0; }
-    button { background: #2e7d32; color: white; border: none; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    input[readonly] {
+      background-color: #f2f2f2;
+      cursor: not-allowed;
+    }
+    button {
+      background: #2e7d32;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #1565c0;
+    }
   </style>
 </head>
+
 <body>
 
-<h2>Share Your Location</h2>
+<h2>Location Details</h2>
 
-<button onclick="getLocation()">📍 Use My Location</button>
+<!-- Manual Inputs -->
+<input id="name" placeholder="Enter Name" required />
+<input id="nodeId" placeholder="Enter Node ID" required />
 
-<input id="lat" placeholder="Latitude" readonly>
-<input id="lon" placeholder="Longitude" readonly>
-<input id="city" placeholder="City" readonly>
-<input id="state" placeholder="State" readonly>
-<input id="pincode" placeholder="Pincode" readonly>
+<!-- Location Button -->
+<button class="secondary" onclick="getLocation()">📍 Use My Location</button>
+
+<!-- Auto-filled (Non-editable) -->
+<input id="lat" placeholder="Latitude" readonly />
+<input id="lon" placeholder="Longitude" readonly />
+<input id="city" placeholder="City" readonly />
+<input id="state" placeholder="State" readonly />
+<input id="pincode" placeholder="Pincode" readonly />
+
+<!-- Submit -->
+<button onclick="submitData()">Submit</button>
 
 <script>
+const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE";
+
 function getLocation() {
   if (!navigator.geolocation) {
-    alert("Geolocation not supported");
+    alert("Geolocation not supported by this browser");
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(async position => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
+  navigator.geolocation.getCurrentPosition(
+    async position => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
 
-    document.getElementById("lat").value = lat;
-    document.getElementById("lon").value = lon;
+      document.getElementById("lat").value = lat;
+      document.getElementById("lon").value = lon;
 
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+      const res = await fetch(url);
+      const data = await res.json();
 
-    const res = await fetch(url);
-    const data = await res.json();
+      document.getElementById("city").value =
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        "";
 
-    document.getElementById("city").value =
-      data.address.city || data.address.town || data.address.village || "";
+      document.getElementById("state").value = data.address.state || "";
+      document.getElementById("pincode").value = data.address.postcode || "";
+    },
+    () => alert("Location permission denied")
+  );
+}
 
-    document.getElementById("state").value = data.address.state || "";
-    document.getElementById("pincode").value = data.address.postcode || "";
-  },
-  () => alert("Location permission denied"));
+async function submitData() {
+  const name = document.getElementById("name").value;
+  const nodeId = document.getElementById("nodeId").value;
+
+  if (!name || !nodeId) {
+    alert("Please enter Name and Node ID");
+    return;
+  }
+
+  const payload = {
+    name: name,
+    nodeId: nodeId,
+    latitude: document.getElementById("lat").value,
+    longitude: document.getElementById("lon").value,
+    city: document.getElementById("city").value,
+    state: document.getElementById("state").value,
+    pincode: document.getElementById("pincode").value,
+    userAgent: navigator.userAgent
+  };
+
+  const res = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  const result = await res.json();
+
+  if (result.status === "success") {
+    alert("✅ Data submitted successfully");
+  } else {
+    alert("❌ Submission failed");
+  }
 }
 </script>
 
