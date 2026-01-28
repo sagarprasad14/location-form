@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Location Collection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 500px; margin: auto; }
+    input, button { width: 100%; padding: 10px; margin: 8px 0; }
+    button { background: #2e7d32; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h2>Share Your Location</h2>
+
+<button onclick="getLocation()">📍 Use My Location</button>
+
+<input id="lat" placeholder="Latitude" readonly>
+<input id="lon" placeholder="Longitude" readonly>
+<input id="city" placeholder="City" readonly>
+<input id="state" placeholder="State" readonly>
+<input id="pincode" placeholder="Pincode" readonly>
+
+<script>
+function getLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async position => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    document.getElementById("lat").value = lat;
+    document.getElementById("lon").value = lon;
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    document.getElementById("city").value =
+      data.address.city || data.address.town || data.address.village || "";
+
+    document.getElementById("state").value = data.address.state || "";
+    document.getElementById("pincode").value = data.address.postcode || "";
+  },
+  () => alert("Location permission denied"));
+}
+</script>
+
+</body>
+</html>
