@@ -57,12 +57,15 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxl7EgQBvnCEFxi1Hz7IHrMh1FSNnE19Gx6XKFAZcIspdDpRNAK1V5HQFAswLN8-F8GDw/exec";
+let locationReady = false;
 
 function getLocation() {
   if (!navigator.geolocation) {
-    alert("Geolocation not supported by this browser");
+    alert("Geolocation not supported");
     return;
   }
+
+  locationReady = false;
 
   navigator.geolocation.getCurrentPosition(
     async position => {
@@ -84,25 +87,44 @@ function getLocation() {
 
       document.getElementById("state").value = data.address.state || "";
       document.getElementById("pincode").value = data.address.postcode || "";
+
+      locationReady = true;
+      alert("📍 Location captured successfully");
     },
-    () => alert("Location permission denied")
+    error => {
+      alert("❌ Unable to fetch location");
+      console.error(error);
+    }
   );
 }
 
 async function submitData() {
-  const name = document.getElementById("name").value;
-  const nodeId = document.getElementById("nodeId").value;
+  if (!locationReady) {
+    alert("Please click 'Use My Location' first");
+    return;
+  }
+
+  const name = document.getElementById("name").value.trim();
+  const nodeId = document.getElementById("nodeId").value.trim();
 
   if (!name || !nodeId) {
     alert("Please enter Name and Node ID");
     return;
   }
 
+  const latitude = document.getElementById("lat").value;
+  const longitude = document.getElementById("lon").value;
+
+  if (!latitude || !longitude) {
+    alert("Location not ready yet. Please wait.");
+    return;
+  }
+
   const payload = {
-    name: name,
-    nodeId: nodeId,
-    latitude: document.getElementById("lat").value,
-    longitude: document.getElementById("lon").value,
+    name,
+    nodeId,
+    latitude,
+    longitude,
     city: document.getElementById("city").value,
     state: document.getElementById("state").value,
     pincode: document.getElementById("pincode").value,
@@ -111,18 +133,20 @@ async function submitData() {
 
   const res = await fetch(SCRIPT_URL, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 
   const result = await res.json();
 
   if (result.status === "success") {
-    alert("✅ Data submitted successfully");
+    alert("✅ Submitted successfully");
   } else {
     alert("❌ Submission failed");
   }
 }
 </script>
+
 
 </body>
 </html>
